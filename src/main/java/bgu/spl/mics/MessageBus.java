@@ -1,12 +1,13 @@
 package bgu.spl.mics;
 
+
 /**
  * The message-bus is a shared object used for communication between
  * micro-services.
  * It should be implemented as a thread-safe singleton.
  * The message-bus implementation must be thread-safe as
  * it is shared between all the micro-services in the system.
- * You must not alter any of the given methods of this interface. 
+ * You must not alter any of the given methods of this interface.
  * You cannot add methods to this interface.
  */
 public interface MessageBus {
@@ -15,18 +16,24 @@ public interface MessageBus {
      * Subscribes {@code m} to receive {@link Event}s of type {@code type}.
      * <p>
      * @param <T>  The type of the result expected by the completed event.
-     * @param type The type to subscribe to,
+     * @param type The type to subscribe to.
      * @param m    The subscribing micro-service.
+     * @pre: m.isSubscribedToEvent(type) == false   // The micro-service must not be already subscribed.
+     * @post: m.isSubscribedToEvent(type) == true   // After subscribing, the micro-service is subscribed to the event type.
      */
     <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m);
+
 
     /**
      * Subscribes {@code m} to receive {@link Broadcast}s of type {@code type}.
      * <p>
-     * @param type 	The type to subscribe to.
-     * @param m    	The subscribing micro-service.
+     * @param type  The type to subscribe to.
+     * @param m     The subscribing micro-service.
+     * @pre: m.isSubscribedToBroadcast(type) == false   // The micro-service must not be already subscribed.
+     * @post: m.isSubscribedToBroadcast(type) == true   // After subscribing, the micro-service is subscribed to the broadcast type.
      */
     void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m);
+
 
     /**
      * Notifies the MessageBus that the event {@code e} is completed and its
@@ -37,6 +44,8 @@ public interface MessageBus {
      * @param <T>    The type of the result expected by the completed event.
      * @param e      The completed event.
      * @param result The resolved result of the completed event.
+     * @pre:
+     * @post: e.getFuture().isDone() == true   // After completing the event, its future should be marked as done.
      */
     <T> void complete(Event<T> e, T result);
 
@@ -44,9 +53,12 @@ public interface MessageBus {
      * Adds the {@link Broadcast} {@code b} to the message queues of all the
      * micro-services subscribed to {@code b.getClass()}.
      * <p>
-     * @param b 	The message to added to the queues.
+     * @param b  The message to add to the queues.
+     * @pre: b != null   // The broadcast message must not be null.
+     * @post: all micro-services subscribed to b.getClass() receive the broadcast. // The broadcast is sent to all subscribers.
      */
     void sendBroadcast(Broadcast b);
+
 
     /**
      * Adds the {@link Event} {@code e} to the message queue of one of the
@@ -93,5 +105,38 @@ public interface MessageBus {
      *                              to became available.
      */
     Message awaitMessage(MicroService m) throws InterruptedException;
-    
+
+
+
+    // for testing:
+    /**
+     * Checks if a specific {@link MicroService} is subscribed to a given type of event.
+     *
+     * @param <T> the type of the result expected from the event.
+     * @param type the class type of the event to check.
+     * @param m the {@link MicroService} whose subscription is being checked.
+     * @return {@code true} if the microservice is subscribed to the specified event type, {@code false} otherwise.
+     */
+    <T> Boolean isSubscribedToEvent(Class<? extends Event<T>> type, MicroService m);
+
+    /**
+     * Checks if a specific {@link MicroService} is subscribed to a given type of broadcast.
+     *
+     * @param type the class type of the broadcast to check.
+     * @param m the {@link MicroService} whose subscription is being checked.
+     * @return {@code true} if the microservice is subscribed to the specified broadcast type, {@code false} otherwise.
+     */
+    Boolean isSubscribedToBroadcast(Class<? extends Broadcast> type, MicroService m);
+
+    /**
+     * Checks if a specific {@link MicroService} is registered in the message bus.
+     *
+     * @param m the {@link MicroService} whose registration is being checked.
+     * @return {@code true} if the microservice is registered, {@code false} otherwise.
+     */
+    Boolean isRegistered(MicroService m);
+
+
+
+
 }

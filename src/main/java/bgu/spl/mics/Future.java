@@ -11,7 +11,12 @@ import java.util.concurrent.TimeUnit;
  * No public constructor is allowed except for the empty constructor.
  */
 public class Future<T> {
-	
+
+
+	private T value;
+	private boolean done = false;
+
+
 	/**
 	 * This should be the the only public constructor in this class.
 	 */
@@ -27,8 +32,17 @@ public class Future<T> {
      * @return return the result of type T if it is available, if not wait until it is available.
      * 	       
      */
-	public T get() {
-		//TODO: implement this.
+	public synchronized T get() {
+		if(done) return value;
+
+		while(!done){
+			try{
+				wait();
+			}catch (InterruptedException e){
+				Thread.currentThread().interrupt();
+			}
+		}
+
 		return null;
 	}
 	
@@ -36,15 +50,22 @@ public class Future<T> {
      * Resolves the result of this Future object.
      */
 	public void resolve (T result) {
-		//TODO: implement this.
+		try{
+			this.value = result;
+			this.done = true;
+			this.notifyAll();
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
 	}
 	
 	/**
      * @return true if this object has been resolved, false otherwise
      */
 	public boolean isDone() {
-		//TODO: implement this.
-		return false;
+
+		return done;
 	}
 	
 	/**
@@ -52,15 +73,35 @@ public class Future<T> {
      * This method is non-blocking, it has a limited amount of time determined
      * by {@code timeout}
      * <p>
-     * @param timout 	the maximal amount of time units to wait for the result.
+     * @param timeout 	the maximal amount of time units to wait for the result.
      * @param unit		the {@link TimeUnit} time units to wait.
      * @return return the result of type T if it is available, if not, 
      * 	       wait for {@code timeout} TimeUnits {@code unit}. If time has
      *         elapsed, return null.
      */
-	public T get(long timeout, TimeUnit unit) {
-		//TODO: implement this.
-		return null;
+	public synchronized T get(long timeout, TimeUnit unit) {
+		if (done) {
+			return value;
+		}
+
+		long millis = unit.toMillis(timeout);
+		long endTime = System.currentTimeMillis() + millis;
+
+		while (!done && millis > 0) {
+			try {
+				wait(millis);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt(); // preserve interrupt flag
+				break;
+			}
+			millis = endTime - System.currentTimeMillis();
+		}
+
+		return done ? value : null;
 	}
 
+
+
 }
+
+
