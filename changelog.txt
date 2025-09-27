@@ -1,0 +1,5 @@
+Changes:
+example input - fixed camera data json.
+pom.xml - fixed gson version and junit version.
+LiDarService - fixed Constructor.
+MessageBusImpl - changed requirment regarding the private methods
